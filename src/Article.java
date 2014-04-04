@@ -2,6 +2,10 @@ public class Article extends Entity {
 	private String text;
 	private String title;
 	
+	public Article(int id) {
+		super(id);
+	}
+
 	public String getText() {
 		return text;
 	}
