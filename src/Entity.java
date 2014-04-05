@@ -11,6 +11,7 @@ public class Entity {
 
 	public Entity(int id) {
 		this.id = id;
+		this.load();
 	}
 	
 	public int getId() {
@@ -57,10 +58,14 @@ public class Entity {
 	
 	public static void main(String[] args) {
 		Article at = new Article(1);
-		at.load();
+		Category cat = new Category(1);
+		Tag tag = new Tag(2);
 		
 		System.out.println(at.getTitle());
 		System.out.println(at.getText());
+		
+		System.out.println(cat.getTitle());
+		System.out.println(tag.getValue());
 		
 		Postgresql.closeConnection();
 	}
