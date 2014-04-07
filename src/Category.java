@@ -6,6 +6,9 @@ public class Category extends Entity {
 	}
 
 	public String getTitle() {
+		if ( title == null ) {
+			this.load();
+		}
 		return title;
 	}
 
