@@ -11,7 +11,6 @@ public class Entity {
 
 	public Entity(int id) {
 		this.id = id;
-		this.load();
 	}
 	
 	public int getId() {

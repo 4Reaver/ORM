@@ -6,6 +6,9 @@ public class Tag extends Entity {
 	}
 	
 	public String getValue() {
+		if ( value == null ) {
+			this.load();
+		}
 		return value;
 	}
 	
