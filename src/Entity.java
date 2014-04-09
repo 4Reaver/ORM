@@ -9,7 +9,7 @@ public abstract class Entity {
 	private int id;
 	private List<String> values = new ArrayList<String>();
 	private boolean isLoaded = false;
-	
+	public Boolean[] isModified;
 	
 	public Entity(int id) {
 		this.id = id;
@@ -35,14 +35,17 @@ public abstract class Entity {
 			
 			preparedStatement.setInt(1, this.id);
 			result = preparedStatement.executeQuery();
+			this.isModified = new Boolean[this.getFields().size()];
 			
 			result.next();
 			for ( String field : fields ) {
 				index = fields.indexOf(field);
 				values.add(index, result.getString(className + "_" + field));
+				this.isModified[index] = new Boolean("False");
 			}
 		
-		isLoaded = true;
+		this.isLoaded = true;
+		
 		} catch (SecurityException | SQLException 
 				| IllegalArgumentException e) {
 			e.printStackTrace();
@@ -71,6 +74,8 @@ public abstract class Entity {
 		
 		System.out.println(at.getValue("title"));
 		System.out.println(at.getValue("text"));
+		
+		System.out.println(at.isModified[0]);
 		
 		Postgresql.closeConnection();
 	}
