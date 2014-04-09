@@ -63,11 +63,11 @@ public abstract class Entity {
 	
 	public static void main(String[] args) {
 		Article at = new Article(1);
-		//Category cat = new Category(1);
-		//Tag tag = new Tag(2);
+		Category cat = new Category(1);
+		Tag tag = new Tag(2);
 		
-		//System.out.println(cat.getTitle());
-		//System.out.println(tag.getValue());
+		System.out.println(cat.getValue("title"));
+		System.out.println(tag.getValue("value"));
 		
 		System.out.println(at.getValue("title"));
 		System.out.println(at.getValue("text"));

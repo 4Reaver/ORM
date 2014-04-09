@@ -1,18 +1,21 @@
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 public class Tag extends Entity {
-	private String value;
+	private List<String> fields = new ArrayList<String>(
+			Arrays.asList("value"));
 	
 	public Tag(int id) {
 		super(id);
 	}
 	
-	public String getValue() {
-		if ( value == null ) {
-			this.load();
-		}
-		return value;
+	@Override
+	public List<String> getFields() {
+		return fields;
 	}
 	
-	public void setValue(String value) {
-		this.value = value;
+	public void setFields(List<String> newFields) {
+		this.fields = newFields;
 	}
 }
