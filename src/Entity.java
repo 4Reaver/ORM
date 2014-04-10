@@ -9,7 +9,7 @@ public abstract class Entity {
 	private int id;
 	private List<String> values = new ArrayList<String>();
 	private boolean isLoaded = false;
-	public Boolean[] isModified;
+	public boolean[] isModified;
 	
 	public Entity(int id) {
 		this.id = id;
@@ -35,13 +35,13 @@ public abstract class Entity {
 			
 			preparedStatement.setInt(1, this.id);
 			result = preparedStatement.executeQuery();
-			this.isModified = new Boolean[this.getFields().size()];
+			this.isModified = new boolean[this.getFields().size()];
 			
 			result.next();
 			for ( String field : fields ) {
 				index = fields.indexOf(field);
 				values.add(index, result.getString(className + "_" + field));
-				this.isModified[index] = new Boolean("False");
+				this.isModified[index] = false;
 			}
 		
 		this.isLoaded = true;
@@ -64,6 +64,17 @@ public abstract class Entity {
 		return values.get(index);
 	}
 	
+	public void setValue(String fieldName, String value) {
+		int index = this.getFields().indexOf(fieldName);
+		
+		if ( index == -1 ) {
+			throw new IllegalArgumentException(); 
+		}
+		
+		this.values.set(index, value);
+		this.isModified[index] = true;
+	}
+	
 	public static void main(String[] args) {
 		Article at = new Article(1);
 		Category cat = new Category(1);
@@ -74,8 +85,6 @@ public abstract class Entity {
 		
 		System.out.println(at.getValue("title"));
 		System.out.println(at.getValue("text"));
-		
-		System.out.println(at.isModified[0]);
 		
 		Postgresql.closeConnection();
 	}
