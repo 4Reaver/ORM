@@ -1,19 +1,22 @@
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 public class Category extends Entity {
-	private String title;
+	private List<String> fields = new ArrayList<String>(
+			Arrays.asList("title"));
 	
 	public Category(int id) {
 		super(id);
 	}
 
-	public String getTitle() {
-		if ( title == null ) {
-			this.load();
-		}
-		return title;
+	@Override
+	public List<String> getFields() {
+		return fields;
 	}
 
-	public void setTitle(String title) {
-		this.title = title;
+	public void setFields(List<String> newFields) {
+		this.fields = newFields;
 	}
 	
 }

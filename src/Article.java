@@ -1,31 +1,21 @@
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 public class Article extends Entity {
-	private String text;
-	private String title;
-	
+	private List<String> fields = new ArrayList<String>(
+			Arrays.asList("title", "text"));
+			
 	public Article(int id) {
 		super(id);
 	}
-
-	public String getText() {
-		if ( text == null ) {
-			this.load();
-		}
-		return text;
+	
+	@Override
+	public List<String> getFields() {
+		return this.fields;
 	}
 	
-	public void setText(String text) {
-		this.text = text;
+	public void setFields(List<String> newFields) {
+		this.fields = newFields;
 	}
-	
-	public String getTitle() {
-		if ( title == null ) {
-			this.load();
-		}
-		return title;
-	}
-	
-	public void setTitle(String title) {
-		this.title = title;
-	}
-	
 }
