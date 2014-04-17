@@ -7,9 +7,10 @@ import java.util.List;
 
 public abstract class Entity {
 	private int id;
+	private List<String> fields;
 	private List<String> values = new ArrayList<String>();
 	private boolean isLoaded = false;
-	public boolean[] isModified;
+	private boolean[] isModified;
 	
 	public Entity(int id) {
 		this.id = id;
@@ -24,7 +25,7 @@ public abstract class Entity {
 	public void load() {
 		Connection connection = Postgresql.getConnection();
 		String className = this.getClass().getSimpleName().toLowerCase();
-		List<String> fields = this.getFields();
+		this.fields = this.getFields();
 		int index;
 		
 		try {
@@ -35,7 +36,7 @@ public abstract class Entity {
 			
 			preparedStatement.setInt(1, this.id);
 			result = preparedStatement.executeQuery();
-			this.isModified = new boolean[this.getFields().size()];
+			this.isModified = new boolean[fields.size()];
 			
 			result.next();
 			for ( String field : fields ) {
@@ -45,9 +46,42 @@ public abstract class Entity {
 			}
 		
 		this.isLoaded = true;
-		
-		} catch (SecurityException | SQLException 
+		} catch (SecurityException | SQLException
 				| IllegalArgumentException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void save() {
+		Connection connection = Postgresql.getConnection();
+		String className = this.getClass().getSimpleName().toLowerCase();
+		StringBuilder updateData = new StringBuilder();
+		
+		this.fields = this.getFields();
+		int fieldsModified = 0;
+		
+		for ( String field : fields ) {
+			int index = fields.indexOf(field);
+			if ( isModified[index] ) {
+				updateData.append(className + "_" + field + "=?, ");
+				fieldsModified += 1;
+			}
+		}
+		if ( updateData.length() > 2 ) {
+			updateData.setLength(updateData.length() - 2);
+		}
+		
+		try {
+			PreparedStatement preparedStatement
+					= connection.prepareStatement("UPDATE " + className + " SET "
+						+ updateData + " WHERE " + className + "_id = ?" );
+			
+			for ( int i = 1; i <= fieldsModified; i++ ) {
+				preparedStatement.setString(i, values.get(i-1));
+			}
+			preparedStatement.setInt(fieldsModified+1, this.id);
+			preparedStatement.execute();
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
@@ -69,6 +103,8 @@ public abstract class Entity {
 		
 		if ( index == -1 ) {
 			throw new IllegalArgumentException(); 
+		} else if ( !isLoaded ) {
+			this.load();
 		}
 		
 		this.values.set(index, value);
@@ -77,14 +113,20 @@ public abstract class Entity {
 	
 	public static void main(String[] args) {
 		Article at = new Article(1);
-		Category cat = new Category(1);
-		Tag tag = new Tag(2);
+		//Category cat = new Category(1);
+		//Tag tag = new Tag(2);
 		
-		System.out.println(cat.getValue("title"));
-		System.out.println(tag.getValue("value"));
+		at.setValue("title", "newTitleqqq");
+		at.save();
 		
-		System.out.println(at.getValue("title"));
-		System.out.println(at.getValue("text"));
+		Article at2 = new Article(2);
+		at2.setValue("title", "newTitle");
+		at2.setValue("text", "intresting text");
+		at2.save();
+		
+		at2.setValue("title", "Third title");
+		at2.setValue("text", "Very interesting content with some freakin' \"quotes\"");
+		at2.save();
 		
 		Postgresql.closeConnection();
 	}
