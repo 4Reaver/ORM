@@ -6,6 +6,10 @@ public class Tag extends Entity {
 	private List<String> fields = new ArrayList<String>(
 			Arrays.asList("value"));
 	
+	public Tag() {
+		super();
+	}
+	
 	public Tag(int id) {
 		super(id);
 	}

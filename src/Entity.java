@@ -10,10 +10,16 @@ public abstract class Entity {
 	private List<String> fields;
 	private List<String> values = new ArrayList<String>();
 	private boolean isLoaded = false;
+	private boolean isCreated;
 	private boolean[] isModified;
+	
+	public Entity() {
+		this.isCreated = false;
+	}
 	
 	public Entity(int id) {
 		this.id = id;
+		this.isCreated = true;
 	}
 	
 	public int getId() {

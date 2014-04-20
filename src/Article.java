@@ -6,6 +6,10 @@ public class Article extends Entity {
 	private List<String> fields = new ArrayList<String>(
 			Arrays.asList("title", "text"));
 			
+	public Article() {
+		super();
+	}
+	
 	public Article(int id) {
 		super(id);
 	}
