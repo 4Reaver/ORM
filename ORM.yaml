@@ -1,0 +1,12 @@
+Article:
+  fields:
+      title: varchar(50)
+      text: text
+
+Category:
+  fields:
+      title: varchar(50)
+
+Tag:
+  fields:
+      value: varchar(50)

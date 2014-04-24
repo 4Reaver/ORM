@@ -7,10 +7,10 @@ import java.util.List;
 
 public abstract class Entity {
 	private int id;
-	private List<String> fields;
-	private List<String> values = new ArrayList<String>();
-	private boolean isLoaded = false;
+	private List<String> fieldsList;
+	private List<String> values;
 	private boolean isCreated;
+	private boolean isLoaded = false;
 	private boolean[] isModified;
 	
 	public Entity() {
@@ -28,11 +28,27 @@ public abstract class Entity {
 	
 	public abstract List<String> getFields();
 	
+	private void initialize() {
+		if ( this.fieldsList == null ) {
+			int size;
+			
+			this.fieldsList = this.getFields();
+			size = this.fieldsList.size();
+			this.values = new ArrayList<String>(size);
+			this.isModified = new boolean[size];
+			
+			for ( int i = 0; i < size; i++ ) {
+				this.values.add(null);
+			}
+		}
+	}
+	
 	public void load() {
 		Connection connection = Postgresql.getConnection();
 		String className = this.getClass().getSimpleName().toLowerCase();
-		this.fields = this.getFields();
 		int index;
+		
+		this.initialize();
 		
 		try {
 			PreparedStatement preparedStatement 
@@ -42,12 +58,12 @@ public abstract class Entity {
 			
 			preparedStatement.setInt(1, this.id);
 			result = preparedStatement.executeQuery();
-			this.isModified = new boolean[fields.size()];
+			this.isModified = new boolean[fieldsList.size()];
 			
 			result.next();
-			for ( String field : fields ) {
-				index = fields.indexOf(field);
-				values.add(index, result.getString(className + "_" + field));
+			for ( String field : fieldsList ) {
+				index = fieldsList.indexOf(field);
+				values.set(index, result.getString(className + "_" + field));
 				this.isModified[index] = false;
 			}
 		
@@ -63,11 +79,10 @@ public abstract class Entity {
 		String className = this.getClass().getSimpleName().toLowerCase();
 		StringBuilder updateData = new StringBuilder();
 		
-		this.fields = this.getFields();
 		int fieldsModified = 0;
 		
-		for ( String field : fields ) {
-			int index = fields.indexOf(field);
+		for ( String field : fieldsList ) {
+			int index = fieldsList.indexOf(field);
 			if ( isModified[index] ) {
 				updateData.append(className + "_" + field + "=?, ");
 				fieldsModified += 1;
@@ -93,7 +108,9 @@ public abstract class Entity {
 	}
 	
 	public String getValue(String fieldName) {
-		int index = this.getFields().indexOf(fieldName);
+		this.initialize();
+		
+		int index = this.fieldsList.indexOf(fieldName);
 		
 		if ( index == -1 ) {
 			throw new IllegalArgumentException(); 
@@ -105,12 +122,12 @@ public abstract class Entity {
 	}
 	
 	public void setValue(String fieldName, String value) {
-		int index = this.getFields().indexOf(fieldName);
+		this.initialize();
+		
+		int index = fieldsList.indexOf(fieldName);
 		
 		if ( index == -1 ) {
 			throw new IllegalArgumentException(); 
-		} else if ( !isLoaded ) {
-			this.load();
 		}
 		
 		this.values.set(index, value);
@@ -122,7 +139,7 @@ public abstract class Entity {
 		//Category cat = new Category(1);
 		//Tag tag = new Tag(2);
 		
-		at.setValue("title", "newTitleqqq");
+		at.setValue("title", "some new title");
 		at.save();
 		
 		Article at2 = new Article(2);
