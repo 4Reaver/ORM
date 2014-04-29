@@ -6,6 +6,10 @@ public class Category extends Entity {
 	private List<String> fields = new ArrayList<String>(
 			Arrays.asList("title"));
 	
+	public Category() {
+		super();
+	}
+	
 	public Category(int id) {
 		super(id);
 	}

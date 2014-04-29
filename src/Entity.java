@@ -7,10 +7,13 @@ import java.util.List;
 
 public abstract class Entity {
 	private int id;
-	private List<String> fields;
-	private List<String> values = new ArrayList<String>();
+	private List<String> fieldsList;
+	private List<String> values;
 	private boolean isLoaded = false;
 	private boolean[] isModified;
+	
+	public Entity() {
+	}
 	
 	public Entity(int id) {
 		this.id = id;
@@ -22,11 +25,27 @@ public abstract class Entity {
 	
 	public abstract List<String> getFields();
 	
+	private void initialize() {
+		if ( this.fieldsList == null ) {
+			int size;
+			
+			this.fieldsList = this.getFields();
+			size = this.fieldsList.size();
+			this.values = new ArrayList<String>(size);
+			this.isModified = new boolean[size];
+			
+			for ( int i = 0; i < size; i++ ) {
+				this.values.add(null);
+			}
+		}
+	}
+	
 	public void load() {
 		Connection connection = Postgresql.getConnection();
 		String className = this.getClass().getSimpleName().toLowerCase();
-		this.fields = this.getFields();
 		int index;
+		
+		this.initialize();
 		
 		try {
 			PreparedStatement preparedStatement 
@@ -36,12 +55,12 @@ public abstract class Entity {
 			
 			preparedStatement.setInt(1, this.id);
 			result = preparedStatement.executeQuery();
-			this.isModified = new boolean[fields.size()];
+			this.isModified = new boolean[fieldsList.size()];
 			
 			result.next();
-			for ( String field : fields ) {
-				index = fields.indexOf(field);
-				values.add(index, result.getString(className + "_" + field));
+			for ( String field : fieldsList ) {
+				index = fieldsList.indexOf(field);
+				values.set(index, result.getString(className + "_" + field));
 				this.isModified[index] = false;
 			}
 		
@@ -55,39 +74,69 @@ public abstract class Entity {
 	public void save() {
 		Connection connection = Postgresql.getConnection();
 		String className = this.getClass().getSimpleName().toLowerCase();
-		StringBuilder updateData = new StringBuilder();
-		
-		this.fields = this.getFields();
+		StringBuilder newFields = new StringBuilder();
+		List<String> newValues = new ArrayList<String>();
 		int fieldsModified = 0;
 		
-		for ( String field : fields ) {
-			int index = fields.indexOf(field);
-			if ( isModified[index] ) {
-				updateData.append(className + "_" + field + "=?, ");
-				fieldsModified += 1;
-			}
-		}
-		if ( updateData.length() > 2 ) {
-			updateData.setLength(updateData.length() - 2);
-		}
-		
 		try {
-			PreparedStatement preparedStatement
-					= connection.prepareStatement("UPDATE " + className + " SET "
-						+ updateData + " WHERE " + className + "_id = ?" );
-			
-			for ( int i = 1; i <= fieldsModified; i++ ) {
-				preparedStatement.setString(i, values.get(i-1));
+			if ( this.id == 0 ) {
+				StringBuilder valuesMold = new StringBuilder();
+				
+				for ( int index = 0; index < isModified.length; index++ ) {
+					if ( isModified[index] ) {
+						newFields.append(className + "_" 
+								+ fieldsList.get(index) + ", ");
+						valuesMold.append("?, ");
+						newValues.add(values.get(index));
+						fieldsModified += 1;
+					}
+				}
+				newFields = cut2LastChar(newFields);
+				valuesMold = cut2LastChar(valuesMold);
+				
+				PreparedStatement preparedStatement 
+						= connection.prepareStatement("INSERT INTO " 
+								+ className + " (" + newFields + ") values ("
+								+ valuesMold + ")");
+				
+				for ( int i = 1; i <= fieldsModified; i++ ) {
+					preparedStatement.setString(i, newValues.get(i-1));
+				}
+				
+				preparedStatement.execute();
+				this.id = getLastID(connection, className);
+			} else {
+				for ( int index = 0; index < isModified.length; index++ ) {
+					if ( isModified[index] ) {
+						newFields.append(className + "_" 
+								+ fieldsList.get(index) + "=?, ");
+						newValues.add(values.get(index));
+						fieldsModified += 1;
+					}
+				}
+				newFields = cut2LastChar(newFields);
+				
+				PreparedStatement preparedStatement
+						= connection.prepareStatement("UPDATE " + className 
+								+ " SET " + newFields + " WHERE " + className 
+								+ "_id = ?" );
+				
+				for ( int i = 1; i <= fieldsModified; i++ ) {
+					preparedStatement.setString(i, newValues.get(i-1));
+				}
+				preparedStatement.setInt(fieldsModified+1, this.id);
+				
+				preparedStatement.execute();
 			}
-			preparedStatement.setInt(fieldsModified+1, this.id);
-			preparedStatement.execute();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
 	
 	public String getValue(String fieldName) {
-		int index = this.getFields().indexOf(fieldName);
+		this.initialize();
+		
+		int index = this.fieldsList.indexOf(fieldName);
 		
 		if ( index == -1 ) {
 			throw new IllegalArgumentException(); 
@@ -99,16 +148,34 @@ public abstract class Entity {
 	}
 	
 	public void setValue(String fieldName, String value) {
-		int index = this.getFields().indexOf(fieldName);
+		this.initialize();
+		
+		int index = fieldsList.indexOf(fieldName);
 		
 		if ( index == -1 ) {
 			throw new IllegalArgumentException(); 
-		} else if ( !isLoaded ) {
-			this.load();
 		}
 		
 		this.values.set(index, value);
 		this.isModified[index] = true;
+	}
+	
+	private StringBuilder cut2LastChar(StringBuilder data) {
+		if ( data.length() > 2 ) {
+			data.setLength(data.length() - 2);
+		}
+		return data;
+	}
+	
+	private int getLastID(Connection connection, String className) throws SQLException {
+		PreparedStatement preparedStatement 
+				= connection.prepareStatement("SELECT " + className + "_id FROM " 
+						+ className + " ORDER BY " + className 
+						+ "_id DESC LIMIT 1");
+		ResultSet result = preparedStatement.executeQuery();
+		
+		result.next();
+		return result.getInt(className + "_id");
 	}
 	
 	public static void main(String[] args) {
@@ -116,17 +183,25 @@ public abstract class Entity {
 		//Category cat = new Category(1);
 		//Tag tag = new Tag(2);
 		
-		at.setValue("title", "newTitleqqq");
+		at.setValue("text", "newtext1");
 		at.save();
 		
-		Article at2 = new Article(2);
+		/*Article at2 = new Article(2);
 		at2.setValue("title", "newTitle");
 		at2.setValue("text", "intresting text");
 		at2.save();
 		
 		at2.setValue("title", "Third title");
 		at2.setValue("text", "Very interesting content with some freakin' \"quotes\"");
-		at2.save();
+		at2.save();*/
+		
+		/*Article at3 = new Article();
+		at3.setValue("title", "Title6");
+		at3.setValue("text", "Text ' for 6");
+		at3.save();
+		
+		at3.setValue("title", "Bugs are wonderful");
+		at3.save();*/
 		
 		Postgresql.closeConnection();
 	}
