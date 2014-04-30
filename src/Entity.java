@@ -9,6 +9,7 @@ public abstract class Entity {
 	private int id;
 	private List<String> fieldsList;
 	private List<String> values;
+	//private String className;
 	private boolean isLoaded = false;
 	private boolean[] isModified;
 	
@@ -133,6 +134,27 @@ public abstract class Entity {
 		}
 	}
 	
+	public void delete() {
+		if ( this.id == 0 ) {
+			throw new RuntimeException();
+		}
+		
+		String className = this.getClass().getSimpleName().toLowerCase();
+		Connection connection = Postgresql.getConnection();
+		try {
+			PreparedStatement preparedStatement 
+					= connection.prepareStatement("DELETE FROM " + className 
+							+ " WHERE " + className + "_id = ?"); 
+			
+			preparedStatement.setInt(1, this.id);
+			preparedStatement.execute();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		this.id = 0;
+	}
+	
 	public String getValue(String fieldName) {
 		this.initialize();
 		
@@ -202,6 +224,9 @@ public abstract class Entity {
 		
 		at3.setValue("title", "Bugs are wonderful");
 		at3.save();*/
+		
+		Article at4 = new Article(4);
+		at4.delete();
 		
 		Postgresql.closeConnection();
 	}
