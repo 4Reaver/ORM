@@ -9,6 +9,7 @@ public abstract class Entity {
 	private int id;
 	private List<String> fieldsList;
 	private List<String> values;
+	private String className;
 	private boolean isLoaded = false;
 	private boolean[] isModified;
 	
@@ -29,6 +30,7 @@ public abstract class Entity {
 		if ( this.fieldsList == null ) {
 			int size;
 			
+			this.className = this.getClass().getSimpleName().toLowerCase();
 			this.fieldsList = this.getFields();
 			size = this.fieldsList.size();
 			this.values = new ArrayList<String>(size);
@@ -42,7 +44,6 @@ public abstract class Entity {
 	
 	public void load() {
 		Connection connection = Postgresql.getConnection();
-		String className = this.getClass().getSimpleName().toLowerCase();
 		int index;
 		
 		this.initialize();
@@ -73,10 +74,11 @@ public abstract class Entity {
 	
 	public void save() {
 		Connection connection = Postgresql.getConnection();
-		String className = this.getClass().getSimpleName().toLowerCase();
 		StringBuilder newFields = new StringBuilder();
 		List<String> newValues = new ArrayList<String>();
 		int fieldsModified = 0;
+		
+		this.initialize();
 		
 		try {
 			if ( this.id == 0 ) {
@@ -91,6 +93,11 @@ public abstract class Entity {
 						fieldsModified += 1;
 					}
 				}
+				
+				if ( fieldsModified == 0 ) {
+					throw new UnsupportedOperationException("Nothing to save");
+				}
+				
 				newFields = cut2LastChar(newFields);
 				valuesMold = cut2LastChar(valuesMold);
 				
@@ -102,7 +109,7 @@ public abstract class Entity {
 				for ( int i = 1; i <= fieldsModified; i++ ) {
 					preparedStatement.setString(i, newValues.get(i-1));
 				}
-				
+				System.out.println(preparedStatement);
 				preparedStatement.execute();
 				this.id = getLastID(connection, className);
 			} else {
@@ -114,6 +121,11 @@ public abstract class Entity {
 						fieldsModified += 1;
 					}
 				}
+				
+				if ( fieldsModified == 0 ) {
+					throw new UnsupportedOperationException("Nothing to update");
+				}
+				
 				newFields = cut2LastChar(newFields);
 				
 				PreparedStatement preparedStatement
@@ -130,7 +142,30 @@ public abstract class Entity {
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} catch (UnsupportedOperationException e) {
+			System.out.println(e.getMessage());
 		}
+	}
+	
+	public void delete() {
+		if ( this.id == 0 ) {
+			throw new RuntimeException();
+		}
+		
+		String className = this.getClass().getSimpleName().toLowerCase();
+		Connection connection = Postgresql.getConnection();
+		try {
+			PreparedStatement preparedStatement 
+					= connection.prepareStatement("DELETE FROM " + className 
+							+ " WHERE " + className + "_id = ?"); 
+			
+			preparedStatement.setInt(1, this.id);
+			preparedStatement.execute();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		this.id = 0;
 	}
 	
 	public String getValue(String fieldName) {
@@ -195,13 +230,16 @@ public abstract class Entity {
 		at2.setValue("text", "Very interesting content with some freakin' \"quotes\"");
 		at2.save();*/
 		
-		/*Article at3 = new Article();
-		at3.setValue("title", "Title6");
-		at3.setValue("text", "Text ' for 6");
+		Article at3 = new Article();
+		//at3.setValue("title", "Title6");
+		//at3.setValue("text", "Text ' for 6");
 		at3.save();
 		
-		at3.setValue("title", "Bugs are wonderful");
-		at3.save();*/
+		//at3.setValue("title", "Bugs are wonderful");
+		//at3.save();
+		
+		/*Article at4 = new Article(4);
+		at4.delete();*/
 		
 		Postgresql.closeConnection();
 	}
